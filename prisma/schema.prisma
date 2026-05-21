@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MediaType {
+  ANIME
+  MOVIE
+  TV
+}
+
+enum WatchStatus {
+  WATCHING
+  COMPLETED
+  PAUSED
+  DROPPED
+  PLAN_TO_WATCH
+}
+
+model User {
+  id              String         @id @default(cuid())
+  name            String?
+  username        String?        @unique
+  email           String?        @unique
+  passwordHash    String?
+  image           String?
+  bio             String?
+  location        String?
+  website         String?
+  autoFavoriteOnComplete Boolean @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  watchlists      Watchlist[]
+  progress        Progress[]
+  favorites       Favorite[]
+  reviews         Review[]
+  achievements    UserAchievement[]
+}
+
+model Media {
+  id              String      @id @default(cuid())
+  sourceId        String
+  source          String
+  type            MediaType
+  title           String
+  overview        String?
+  posterUrl       String?
+  bannerUrl       String?
+  rating          Float?
+  genres          Json
+  episodesCount   Int?
+  seasonsCount    Int?
+  runtimeMinutes  Int?
+  duration       Int?    // duration in seconds, optional
+  trailerUrl      String?
+  year            Int?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  watchlists      Watchlist[]
+  progress        Progress[]
+  favorites       Favorite[]
+  reviews         Review[]
+
+  @@unique([source, sourceId])
+}
+
+model Watchlist {
+  id          String       @id @default(cuid())
+  userId      String
+  mediaId     String
+  status      WatchStatus
+  addedAt     DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media       Media        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+}
+
+model Progress {
+  id            String      @id @default(cuid())
+  userId        String
+  mediaId       String
+  watchedCount  Int         @default(0)
+  totalCount    Int         @default(0)
+  percentage    Float       @default(0)
+  lastWatchedAt DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media         Media       @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  mediaId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  mediaId   String
+  rating    Int
+  body      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String
+  icon        String
+  createdAt   DateTime @default(now())
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken  String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
