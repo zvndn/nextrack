@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/lib/auth";
 import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
+import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
 
 function genreList(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
@@ -33,11 +34,21 @@ export default async function ProfilePage() {
 
   const saved = user?.watchlists ?? [];
   const progress = user?.progress ?? [];
+  const watchActivities = session?.user?.id
+    ? await prisma.watchActivity.findMany({
+        where: { userId: session.user.id },
+        select: { dayKey: true }
+      })
+    : [];
   const favorites = user?.favorites ?? [];
   const progressByMediaId = new Map(progress.map((item) => [item.mediaId, item]));
   const completedCount = saved.filter((item) => item.status === "COMPLETED").length;
   const watching = saved.filter((item) => item.status === "WATCHING");
   const watchedHours = saved.reduce((sum, item) => sum + estimatedHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const watchStreak = calculateWatchStreak([
+    ...watchActivities.map((item) => item.dayKey),
+    ...dateValuesToDayKeys(progress.map((item) => item.lastWatchedAt))
+  ]);
   const averageProgress = saved.length
     ? Math.round(saved.reduce((sum, item) => sum + (progressByMediaId.get(item.media.id)?.percentage ?? 0), 0) / saved.length)
     : 0;
@@ -247,7 +258,7 @@ export default async function ProfilePage() {
                 {[
                   { label: "Saved", value: saved.length },
                   { label: "Completed", value: completedCount },
-                  { label: "Favorites", value: favorites.length },
+                  { label: "Watch streak", value: `${watchStreak} day${watchStreak === 1 ? "" : "s"}`, detail: "consecutive active days" },
                   {
                     label: "Watched hours",
                     value: `${Math.round(watchedHours)}h`,

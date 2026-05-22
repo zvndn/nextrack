@@ -2,6 +2,7 @@ import type { WatchStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { progressPercentage } from "@/lib/media-store";
+import { recordWatchActivity } from "@/lib/watch-streak";
 import { WATCH_STATUSES, WatchStatusValues } from "@/lib/watch-status";
 
 const validStatuses = new Set<string>(WATCH_STATUSES);
@@ -49,6 +50,10 @@ export async function PATCH(request: Request) {
 
   const media = await prisma.media.findUnique({ where: { id: mediaId } });
   if (!media) return Response.json({ error: "Media was not found." }, { status: 404 });
+  const existingProgress = await prisma.progress.findUnique({
+    where: { userId_mediaId: { userId: session.user.id, mediaId } },
+    select: { watchedCount: true }
+  });
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { autoFavoriteOnComplete: true }
@@ -67,6 +72,7 @@ export async function PATCH(request: Request) {
         : WatchStatusValues.PLAN_TO_WATCH);
   const lastWatchedAt = watchedCount > 0 ? new Date() : null;
   const shouldAutoFavorite = user?.autoFavoriteOnComplete && status === WatchStatusValues.COMPLETED;
+  const shouldRecordActivity = watchedCount > (existingProgress?.watchedCount ?? 0);
 
   const transactionResults = await prisma.$transaction([
     prisma.media.update({
@@ -108,6 +114,10 @@ export async function PATCH(request: Request) {
 
   const progress = transactionResults[1];
   const watchlist = transactionResults[2];
+
+  if (shouldRecordActivity) {
+    await recordWatchActivity(session.user.id, mediaId, lastWatchedAt ?? new Date());
+  }
 
   return Response.json({ progress, watchlist, favoriteAdded: shouldAutoFavorite });
 }

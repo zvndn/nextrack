@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { estimatedHours, mediaTypeLabel, posterUrl, progressText, statusLabel, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
+import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -21,13 +22,24 @@ export default async function DashboardPage() {
   const progress = session?.user?.id
     ? await prisma.progress.findMany({ where: { userId: session.user.id } })
     : [];
+  const watchActivities = session?.user?.id
+    ? await prisma.watchActivity.findMany({
+        where: { userId: session.user.id },
+        select: { dayKey: true }
+      })
+    : [];
   const progressByMediaId = new Map(progress.map((item) => [item.mediaId, item]));
   const watchedHours = saved.reduce((sum, item) => sum + estimatedHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const watchStreak = calculateWatchStreak([
+    ...watchActivities.map((item) => item.dayKey),
+    ...dateValuesToDayKeys(progress.map((item) => item.lastWatchedAt))
+  ]);
   const completed = saved.filter((item) => item.status === "COMPLETED").length;
   const watching = saved.filter((item) => item.status === "WATCHING");
   const planned = saved.filter((item) => item.status === "PLAN_TO_WATCH").length;
   const dashboardStats = [
     { label: "Saved titles", value: String(saved.length), detail: "in your library" },
+    { label: "Watch streak", value: `${watchStreak} day${watchStreak === 1 ? "" : "s"}`, detail: "consecutive active days" },
     {
       label: "Watched hours",
       value: `${Math.round(watchedHours)}h`,
@@ -96,7 +108,7 @@ export default async function DashboardPage() {
         <h1 className="font-display text-4xl font-semibold">Dashboard</h1>
         <p className="mt-2 text-sm text-zinc-400">Progress, statistics, weekly activity, and watch status.</p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           {dashboardStats.map((stat) => (
             <article key={stat.label} className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
               <p className="text-xs uppercase text-zinc-500">{stat.label}</p>

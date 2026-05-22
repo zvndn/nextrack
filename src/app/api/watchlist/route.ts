@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { upsertExternalMedia } from "@/lib/media-store";
 import type { ExternalMediaItem } from "@/lib/media-sources";
+import { recordWatchActivity } from "@/lib/watch-streak";
 import { WATCH_STATUSES, WatchStatusValues } from "@/lib/watch-status";
 
 const validStatuses = new Set(WATCH_STATUSES);
@@ -87,6 +88,11 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Valid mediaId and status are required." }, { status: 400 });
   }
 
+  const existingProgress = await prisma.progress.findUnique({
+    where: { userId_mediaId: { userId: session.user.id, mediaId } },
+    select: { watchedCount: true, totalCount: true }
+  });
+
   const watchlist = await prisma.watchlist.update({
     where: { userId_mediaId: { userId: session.user.id, mediaId } },
     data: { status },
@@ -113,6 +119,10 @@ export async function PATCH(request: Request) {
         lastWatchedAt: new Date()
       }
     });
+
+    if ((existingProgress?.watchedCount ?? 0) < totalCount) {
+      await recordWatchActivity(session.user.id, mediaId);
+    }
   }
 
   return Response.json({ watchlist });

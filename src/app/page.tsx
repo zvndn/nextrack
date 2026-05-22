@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
+import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
 import { BookmarkPlus, Heart, Plus, TrendingUp } from "lucide-react";
 
 export default async function HomePage() {
@@ -33,8 +34,18 @@ export default async function HomePage() {
   const progress = session?.user?.id
     ? await prisma.progress.findMany({ where: { userId: session.user.id } })
     : [];
+  const watchActivities = session?.user?.id
+    ? await prisma.watchActivity.findMany({
+        where: { userId: session.user.id },
+        select: { dayKey: true }
+      })
+    : [];
 
   const progressByMediaId = new Map(progress.map((item) => [item.mediaId, item]));
+  const watchStreak = calculateWatchStreak([
+    ...watchActivities.map((item) => item.dayKey),
+    ...dateValuesToDayKeys(progress.map((item) => item.lastWatchedAt))
+  ]);
 
   const continueItems = saved
     .filter((item) => item.status === "WATCHING")
@@ -76,7 +87,7 @@ export default async function HomePage() {
   const stats = [
     { label: "Saved titles", value: String(savedCount), detail: "in your library" },
     { label: "Watching", value: String(watchingCount), detail: "active titles" },
-    { label: "Completed", value: String(completedCount), detail: "finished titles" },
+    { label: "Watch streak", value: `${watchStreak} day${watchStreak === 1 ? "" : "s"}`, detail: "consecutive active days" },
     {
       label: "Watched hours",
       value: `${Math.round(watchedHours)}h`,
