@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Award, CheckCircle2, Clock3, ExternalLink, Flame, Heart, LogOut, MapPin, Target, Trophy, UserRoundCheck, Zap } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { MediaCard } from "@/components/media/media-card";
@@ -15,6 +16,9 @@ function genreList(value: unknown) {
 
 export default async function ProfilePage() {
   const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
   const user = session?.user?.id
     ? await prisma.user.findUnique({
         where: { id: session.user.id },

@@ -1,12 +1,16 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { ProgressCard } from "@/components/media/progress-card";
 import { WatchlistManager } from "@/components/dashboard/watchlist-manager";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { estimatedHours, mediaTypeLabel, posterUrl, progressText, statusLabel } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
   const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
   const saved = session?.user?.id
     ? await prisma.watchlist.findMany({
         where: { userId: session.user.id },
