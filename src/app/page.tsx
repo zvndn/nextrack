@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { AppShell } from "@/components/layout/app-shell";
 import { MediaCard } from "@/components/media/media-card";
-import { ProgressCard } from "@/components/media/progress-card";
+import { HomeLibraryTabs } from "@/components/home/home-library-tabs";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
+import { getReleaseCalendarForUser } from "@/lib/release-calendar";
 import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
-import { BookmarkPlus, Heart, Plus, TrendingUp } from "lucide-react";
+import { Heart, Plus, TrendingUp } from "lucide-react";
 
 export default async function HomePage() {
   const session = await auth();
@@ -40,6 +41,7 @@ export default async function HomePage() {
         select: { dayKey: true }
       })
     : [];
+  const releaseItems = session?.user?.id ? await getReleaseCalendarForUser(session.user.id) : [];
 
   const progressByMediaId = new Map(progress.map((item) => [item.mediaId, item]));
   const watchStreak = calculateWatchStreak([
@@ -148,30 +150,7 @@ export default async function HomePage() {
               ))}
             </div>
 
-            <section>
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="font-display text-2xl font-semibold">Continue watching</h2>
-                  <p className="mt-1 text-sm text-zinc-500">Titles currently marked as watching.</p>
-                </div>
-                <Button href="/dashboard" variant="ghost">Manage</Button>
-              </div>
-              {continueItems.length ? (
-                <div className="grid gap-4 lg:grid-cols-3">
-                  {continueItems.map((item) => (
-                    <ProgressCard key={item.id} {...item} />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
-                  <p className="text-sm text-zinc-400">No active titles yet. Add something from Discover, then mark it as watching or save episode progress.</p>
-                  <Button href="/discover" className="mt-4">
-                    <BookmarkPlus className="h-4 w-4" />
-                    Find something to watch
-                  </Button>
-                </div>
-              )}
-            </section>
+            <HomeLibraryTabs continueItems={continueItems} releaseItems={releaseItems} />
 
             <section>
               <div className="mb-4 flex items-center justify-between">

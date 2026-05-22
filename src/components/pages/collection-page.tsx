@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { SearchClient } from "@/components/discover/search-client";
+import { DiscoverContentTabs } from "@/components/discover/discover-content-tabs";
+import type { ReleaseCalendarItem } from "@/lib/release-calendar";
 import type { MediaSearchType } from "@/lib/media-sources";
 
 type CollectionPageProps = {
@@ -7,9 +8,11 @@ type CollectionPageProps = {
   description: string;
   filter: "all" | "Anime" | "Movie" | "TV Series";
   initialQuery?: string;
+  releaseItems?: ReleaseCalendarItem[];
+  signedIn?: boolean;
 };
 
-export function CollectionPage({ title, description, filter, initialQuery = "" }: CollectionPageProps) {
+export function CollectionPage({ title, description, filter, initialQuery = "", releaseItems = [], signedIn = false }: CollectionPageProps) {
   const initialType: MediaSearchType = filter === "Anime" ? "anime" : filter === "Movie" ? "movie" : filter === "TV Series" ? "tv" : "all";
 
   return (
@@ -22,7 +25,12 @@ export function CollectionPage({ title, description, filter, initialQuery = "" }
           </div>
         </div>
 
-        <SearchClient initialType={initialType} initialQuery={initialQuery} />
+        <DiscoverContentTabs
+          initialType={initialType}
+          initialQuery={initialQuery}
+          releaseItems={releaseItems}
+          signedIn={signedIn}
+        />
       </main>
     </AppShell>
   );
