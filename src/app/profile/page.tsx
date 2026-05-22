@@ -7,7 +7,7 @@ import { MediaCard } from "@/components/media/media-card";
 import { ProgressCard } from "@/components/media/progress-card";
 import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/lib/auth";
-import { estimatedHours, mediaTypeLabel, posterUrl, progressText } from "@/lib/media-presenters";
+import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 
 function genreList(value: unknown) {
@@ -244,17 +244,24 @@ export default async function ProfilePage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Saved", value: saved.length },
-                { label: "Completed", value: completedCount },
-                { label: "Favorites", value: favorites.length },
-                { label: "Hours", value: Math.round(watchedHours) }
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
-                  <p className="font-display mt-2 text-3xl font-semibold text-white">{stat.value}</p>
-                </div>
-              ))}
+                {[
+                  { label: "Saved", value: saved.length },
+                  { label: "Completed", value: completedCount },
+                  { label: "Favorites", value: favorites.length },
+                  {
+                    label: "Watched hours",
+                    value: `${Math.round(watchedHours)}h`,
+                    detail: `Lifetime spent: ${watchedLifetimeText(watchedHours)}`,
+                    extraDetail: `Fun comparison: ${watchedFunComparisonText(watchedHours)}`
+                  }
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-lg border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
+                    <p className="font-display mt-2 text-3xl font-semibold text-white">{stat.value}</p>
+                    {"detail" in stat ? <p className="mt-1 text-sm text-zinc-400">{stat.detail}</p> : null}
+                    {"extraDetail" in stat ? <p className="mt-1 text-xs text-zinc-500">{stat.extraDetail}</p> : null}
+                  </div>
+                ))}
             </div>
           </div>
         </section>
@@ -394,3 +401,4 @@ export default async function ProfilePage() {
     </AppShell>
   );
 }
+

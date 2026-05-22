@@ -3,7 +3,7 @@ import { ProgressCard } from "@/components/media/progress-card";
 import { WatchlistManager } from "@/components/dashboard/watchlist-manager";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { estimatedHours, mediaTypeLabel, posterUrl, progressText, statusLabel } from "@/lib/media-presenters";
+import { estimatedHours, mediaTypeLabel, posterUrl, progressText, statusLabel, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -28,7 +28,12 @@ export default async function DashboardPage() {
   const planned = saved.filter((item) => item.status === "PLAN_TO_WATCH").length;
   const dashboardStats = [
     { label: "Saved titles", value: String(saved.length), detail: "in your library" },
-    { label: "Watched hours", value: `${Math.round(watchedHours)}h`, detail: "estimated from progress" },
+    {
+      label: "Watched hours",
+      value: `${Math.round(watchedHours)}h`,
+      detail: `Lifetime spent: ${watchedLifetimeText(watchedHours)}`,
+      extraDetail: `Fun comparison: ${watchedFunComparisonText(watchedHours)}`
+    },
     { label: "Completed", value: String(completed), detail: "finished titles" },
     { label: "Planned", value: String(planned), detail: "queued for later" }
   ];
@@ -97,6 +102,7 @@ export default async function DashboardPage() {
               <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
               <div className="mt-2 font-display text-3xl font-semibold">{stat.value}</div>
               <p className="mt-1 text-sm text-zinc-400">{stat.detail}</p>
+              {"extraDetail" in stat ? <p className="mt-1 text-xs text-zinc-500">{stat.extraDetail}</p> : null}
             </article>
           ))}
         </div>
@@ -156,3 +162,4 @@ export default async function DashboardPage() {
     </AppShell>
   );
 }
+

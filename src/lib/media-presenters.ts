@@ -28,3 +28,21 @@ export function estimatedHours(media: Media, progress?: Progress | null) {
   const runtime = media.runtimeMinutes ?? (media.type === "MOVIE" ? 110 : 24);
   return (progress.watchedCount * runtime) / 60;
 }
+
+export function watchedLifetimeText(hours: number) {
+  const totalHours = Math.max(0, Math.round(hours));
+  const days = Math.floor(totalHours / 24);
+  const remainingHours = totalHours % 24;
+
+  if (!days) return `${remainingHours} hours of your mortal lifespan`;
+  if (!remainingHours) return `${days} full days of your mortal lifespan`;
+  return `${days} days and ${remainingHours} hours of your mortal lifespan`;
+}
+
+export function watchedFunComparisonText(hours: number) {
+  const safeHours = Math.max(0, hours);
+  const booksRead = Math.round(safeHours / 6);
+  const kilometersWalked = Math.round(safeHours * 4.8);
+
+  return `Same energy as finishing ${booksRead} books or walking ${kilometersWalked} km`;
+}

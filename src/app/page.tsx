@@ -4,7 +4,7 @@ import { MediaCard } from "@/components/media/media-card";
 import { ProgressCard } from "@/components/media/progress-card";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
-import { estimatedHours, mediaTypeLabel, posterUrl, progressText } from "@/lib/media-presenters";
+import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 import { BookmarkPlus, Heart, Plus, TrendingUp } from "lucide-react";
 
@@ -77,7 +77,12 @@ export default async function HomePage() {
     { label: "Saved titles", value: String(savedCount), detail: "in your library" },
     { label: "Watching", value: String(watchingCount), detail: "active titles" },
     { label: "Completed", value: String(completedCount), detail: "finished titles" },
-    { label: "Watched hours", value: `${Math.round(watchedHours)}h`, detail: "estimated from progress" }
+    {
+      label: "Watched hours",
+      value: `${Math.round(watchedHours)}h`,
+      detail: `Lifetime spent: ${watchedLifetimeText(watchedHours)}`,
+      extraDetail: `Fun comparison: ${watchedFunComparisonText(watchedHours)}`
+    }
   ];
 
   const heroMedia = saved[0]?.media;
@@ -127,6 +132,7 @@ export default async function HomePage() {
                   <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
                   <div className="mt-2 font-display text-3xl font-semibold text-white">{stat.value}</div>
                   <p className="mt-1 text-sm text-zinc-400">{stat.detail}</p>
+                  {"extraDetail" in stat ? <p className="mt-1 text-xs text-zinc-500">{stat.extraDetail}</p> : null}
                 </article>
               ))}
             </div>
@@ -228,3 +234,4 @@ export default async function HomePage() {
     </AppShell>
   );
 }
+
