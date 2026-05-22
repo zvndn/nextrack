@@ -43,6 +43,16 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         {children}
+        <footer className="border-t border-white/10 px-4 py-6 text-sm text-zinc-500 md:px-8">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p>NexTrack helps you track anime, movies, and TV series in one place.</p>
+            <nav className="flex flex-wrap gap-4">
+              <Link href="/about" className="hover:text-white">About</Link>
+              <Link href="/privacy" className="hover:text-white">Privacy</Link>
+              <Link href="/terms" className="hover:text-white">Terms</Link>
+            </nav>
+          </div>
+        </footer>
       </div>
     </div>
   );
