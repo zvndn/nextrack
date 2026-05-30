@@ -24,23 +24,23 @@ export function HomeLibraryTabs({ continueItems, releaseItems }: Props) {
 
   return (
     <section>
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-2xl font-semibold">Library pulse</h2>
           <p className="mt-1 text-sm text-zinc-500">Jump back into active titles or see what drops next.</p>
         </div>
-        <div className="inline-flex rounded-md border border-white/10 bg-white/[0.04] p-1">
+        <div className="inline-flex w-full rounded-md border border-white/10 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab("continue")}
-            className={`rounded-md px-3 py-2 text-sm transition ${activeTab === "continue" ? "bg-cyan-300 text-slate-950" : "text-zinc-300 hover:text-white"}`}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition sm:flex-none ${activeTab === "continue" ? "bg-cyan-300 text-slate-950 shadow-[0_10px_24px_rgb(var(--accent-rgb)/0.16)]" : "text-zinc-300 hover:bg-white/7 hover:text-white"}`}
           >
             Continue watching
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("calendar")}
-            className={`rounded-md px-3 py-2 text-sm transition ${activeTab === "calendar" ? "bg-cyan-300 text-slate-950" : "text-zinc-300 hover:text-white"}`}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition sm:flex-none ${activeTab === "calendar" ? "bg-cyan-300 text-slate-950 shadow-[0_10px_24px_rgb(var(--accent-rgb)/0.16)]" : "text-zinc-300 hover:bg-white/7 hover:text-white"}`}
           >
             Release calendar
           </button>
@@ -55,7 +55,7 @@ export function HomeLibraryTabs({ continueItems, releaseItems }: Props) {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-400">
+          <div className="panel rounded-lg p-5 text-sm text-zinc-400">
             No active titles yet. Add something from Discover, then mark it as watching or save episode progress.
           </div>
         )

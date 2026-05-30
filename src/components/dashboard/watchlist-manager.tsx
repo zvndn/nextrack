@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDownAZ, Search, Trash2 } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { ArrowDownAZ, Copy, Link2, Search, Share2, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 
 type WatchStatus = "WATCHING" | "COMPLETED" | "PAUSED" | "DROPPED" | "PLAN_TO_WATCH";
@@ -17,6 +17,11 @@ type WatchlistItem = {
   year?: number | null;
   progressText: string;
   progress: number;
+};
+
+type SharingState = {
+  enabled: boolean;
+  shareUrl: string | null;
 };
 
 const statusOptions: { value: WatchStatus; label: string }[] = [
@@ -41,13 +46,32 @@ const sortOptions = [
 
 type SortOption = (typeof sortOptions)[number]["value"];
 
-export function WatchlistManager({ initialItems }: { initialItems: WatchlistItem[] }) {
+export function WatchlistManager({
+  initialItems,
+  initialSharing,
+  showSharing = true
+}: {
+  initialItems: WatchlistItem[];
+  initialSharing: SharingState;
+  showSharing?: boolean;
+}) {
   const [items, setItems] = useState(initialItems);
   const [message, setMessage] = useState("");
+  const [sharing, setSharing] = useState(initialSharing);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | WatchStatus>("ALL");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [origin, setOrigin] = useState("");
   const [isPending, startTransition] = useTransition();
+  const shareHref = useMemo(() => {
+    if (!sharing.shareUrl) return null;
+    if (!origin) return sharing.shareUrl;
+    return new URL(sharing.shareUrl, origin).toString();
+  }, [origin, sharing.shareUrl]);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const nextItems = items.filter((item) => {
@@ -112,6 +136,44 @@ export function WatchlistManager({ initialItems }: { initialItems: WatchlistItem
     });
   }
 
+  function updateSharing(enabled: boolean) {
+    setMessage("");
+    const previousSharing = sharing;
+    setSharing((current) => ({ ...current, enabled }));
+
+    startTransition(async () => {
+      const response = await fetch("/api/watchlist/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (!response.ok) {
+        setSharing(previousSharing);
+        setMessage("Could not update sharing.");
+        return;
+      }
+
+      const data = await response.json();
+      setSharing({
+        enabled: data.enabled,
+        shareUrl: data.shareUrl
+      });
+      setMessage(enabled ? "Public share link enabled." : "Public share link disabled.");
+    });
+  }
+
+  async function copyShareLink() {
+    if (!shareHref) return;
+
+    try {
+      await navigator.clipboard.writeText(shareHref);
+      setMessage("Share link copied.");
+    } catch {
+      setMessage("Could not copy the link.");
+    }
+  }
+
   if (items.length === 0) {
     return (
       <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
@@ -132,20 +194,63 @@ export function WatchlistManager({ initialItems }: { initialItems: WatchlistItem
         {message ? <p className="text-sm text-zinc-300">{message}</p> : null}
       </div>
 
+      {showSharing ? <div className="mt-5 rounded-lg border border-cyan-300/20 bg-cyan-300/5 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+              <Share2 className="h-4 w-4 text-cyan-200" />
+              Public share link
+            </h3>
+            <p className="mt-1 text-sm text-zinc-400">
+              {sharing.enabled ? "Anyone with this link can view your current watchlist." : "Enable sharing to create a public watchlist link."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {shareHref ? (
+              <Link
+                href={shareHref}
+                className="inline-flex h-10 min-w-0 items-center gap-2 rounded-md border border-white/10 bg-black/30 px-3 text-sm text-zinc-300 transition hover:text-white"
+              >
+                <Link2 className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{shareHref}</span>
+              </Link>
+            ) : null}
+            {sharing.enabled && shareHref ? (
+              <button
+                type="button"
+                onClick={copyShareLink}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                <Copy className="h-4 w-4" />
+                Copy
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => updateSharing(!sharing.enabled)}
+              disabled={isPending}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-cyan-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:opacity-50"
+            >
+              {sharing.enabled ? "Disable sharing" : "Enable sharing"}
+            </button>
+          </div>
+        </div>
+      </div> : null}
+
       <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_180px_180px]">
-        <label className="flex h-10 items-center gap-3 rounded-md border border-white/10 bg-black/30 px-3">
-          <Search className="h-4 w-4 text-zinc-500" />
+        <label className="library-search flex h-10 items-center gap-3 rounded-md px-3">
+          <Search className="library-control-icon h-4 w-4" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search title, type, year, or progress"
-            className="h-full min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+            className="library-search-input h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </label>
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value as "ALL" | WatchStatus)}
-          className="h-10 rounded-md border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-cyan-300"
+          className="library-select h-10 rounded-md px-3 text-sm outline-none"
         >
           {statusFilters.map((option) => (
             <option key={option.value} value={option.value} className="bg-zinc-950">
@@ -153,12 +258,12 @@ export function WatchlistManager({ initialItems }: { initialItems: WatchlistItem
             </option>
           ))}
         </select>
-        <label className="flex h-10 items-center gap-2 rounded-md border border-white/10 bg-black/30 px-3">
-          <ArrowDownAZ className="h-4 w-4 text-zinc-500" />
+        <label className="library-select-shell flex h-10 items-center gap-2 rounded-md px-3">
+          <ArrowDownAZ className="library-control-icon h-4 w-4" />
           <select
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value as SortOption)}
-            className="h-full min-w-0 flex-1 bg-transparent text-sm text-white outline-none"
+            className="library-select-inner h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value} className="bg-zinc-950">
@@ -201,7 +306,7 @@ export function WatchlistManager({ initialItems }: { initialItems: WatchlistItem
                 value={item.status}
                 onChange={(event) => updateStatus(item.mediaId, event.target.value as WatchStatus)}
                 disabled={isPending}
-                className="h-10 flex-1 rounded-md border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-cyan-300 md:flex-initial md:w-full"
+                className="library-select h-10 flex-1 rounded-md px-3 text-sm outline-none md:flex-initial md:w-full"
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value} className="bg-zinc-950">

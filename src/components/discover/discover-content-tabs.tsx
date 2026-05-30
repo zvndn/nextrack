@@ -18,18 +18,18 @@ export function DiscoverContentTabs({ initialType, initialQuery, releaseItems, s
 
   return (
     <section>
-      <div className="mb-6 inline-flex rounded-md border border-white/10 bg-white/[0.04] p-1">
+      <div className="mb-6 inline-flex rounded-md border border-white/10 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
         <button
           type="button"
           onClick={() => setActiveTab("search")}
-          className={`rounded-md px-3 py-2 text-sm transition ${activeTab === "search" ? "bg-cyan-300 text-slate-950" : "text-zinc-300 hover:text-white"}`}
+          className={`rounded-md px-3 py-2 text-sm font-semibold transition ${activeTab === "search" ? "bg-cyan-300 text-slate-950 shadow-[0_10px_24px_rgb(var(--accent-rgb)/0.16)]" : "text-zinc-300 hover:bg-white/7 hover:text-white"}`}
         >
           Search
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("calendar")}
-          className={`rounded-md px-3 py-2 text-sm transition ${activeTab === "calendar" ? "bg-cyan-300 text-slate-950" : "text-zinc-300 hover:text-white"}`}
+          className={`rounded-md px-3 py-2 text-sm font-semibold transition ${activeTab === "calendar" ? "bg-cyan-300 text-slate-950 shadow-[0_10px_24px_rgb(var(--accent-rgb)/0.16)]" : "text-zinc-300 hover:bg-white/7 hover:text-white"}`}
         >
           Release calendar
         </button>

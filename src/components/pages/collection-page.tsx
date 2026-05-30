@@ -20,7 +20,7 @@ export function CollectionPage({ title, description, filter, initialQuery = "", 
       <main className="px-4 py-6 md:px-8">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-display text-4xl font-semibold">{title}</h1>
+            <h1 className="page-title font-display text-4xl font-semibold">{title}</h1>
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">{description}</p>
           </div>
         </div>

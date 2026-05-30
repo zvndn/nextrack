@@ -116,13 +116,13 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
   return (
     <section>
       <form onSubmit={onSubmit} className="flex flex-col gap-3 md:flex-row">
-        <div className="flex h-11 flex-1 items-center gap-3 rounded-md border border-white/10 bg-white/[0.04] px-3">
-          <Search className="h-4 w-4 text-zinc-500" />
+        <div className="discover-search flex h-11 flex-1 items-center gap-3 rounded-md px-3">
+          <Search className="discover-search-icon h-4 w-4" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search any anime, movie, or TV series"
-            className="h-full flex-1 bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+            className="discover-search-input h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </div>
         <Button type="submit" disabled={isPending}>{isPending ? "Searching..." : "Search"}</Button>
@@ -136,10 +136,10 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
               setType(filter.value);
               runSearch(query, filter.value);
             }}
-            className={`rounded-md border px-3 py-2 text-sm transition ${
+            className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
               type === filter.value
-                ? "border-cyan-300 bg-cyan-300 text-black"
-                : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10"
+                ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_10px_24px_rgb(var(--accent-rgb)/0.16)]"
+                : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
             }`}
           >
             {filter.label}
@@ -147,7 +147,7 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
         ))}
       </div>
 
-      {message ? <p className="mt-4 rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-zinc-300">{message}</p> : null}
+      {message ? <p className="mt-4 rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-zinc-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">{message}</p> : null}
 
       {/* Loading Skeleton for Trending Items */}
       {!query && loadingTrending ? (
@@ -188,7 +188,7 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
                 <div
                   key={item.id}
                   onClick={() => setSelectedMedia(item)}
-                  className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 hover:border-cyan-300/40 transition cursor-pointer"
+                  className="interactive-card flex cursor-pointer gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
                 >
                   <div className="relative h-16 w-11 flex-shrink-0 overflow-hidden rounded bg-zinc-900">
                     {item.image ? (
@@ -234,7 +234,7 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
                 <div
                   key={item.id}
                   onClick={() => setSelectedMedia(item)}
-                  className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 hover:border-cyan-300/40 transition cursor-pointer"
+                  className="interactive-card flex cursor-pointer gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
                 >
                   <div className="relative h-16 w-11 flex-shrink-0 overflow-hidden rounded bg-zinc-900">
                     {item.image ? (
@@ -280,7 +280,7 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
                 <div
                   key={item.id}
                   onClick={() => setSelectedMedia(item)}
-                  className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3 hover:border-cyan-300/40 transition cursor-pointer"
+                  className="interactive-card flex cursor-pointer gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3"
                 >
                   <div className="relative h-16 w-11 flex-shrink-0 overflow-hidden rounded bg-zinc-900">
                     {item.image ? (
@@ -333,7 +333,7 @@ export function SearchClient({ initialType = "all", initialQuery = "" }: { initi
               <article
                 key={`${mediaResultKey(item)}-${index}`}
                 onClick={() => setSelectedMedia(item)}
-                className="grid grid-cols-[92px_1fr] gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-3 hover:border-cyan-300/40 transition cursor-pointer"
+                className="interactive-card grid cursor-pointer grid-cols-[92px_1fr] gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-3"
               >
             <div className="relative h-32 overflow-hidden rounded-md bg-zinc-900">
               {item.image ? (

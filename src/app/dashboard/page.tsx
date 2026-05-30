@@ -22,6 +22,13 @@ export default async function DashboardPage() {
         orderBy: { updatedAt: "desc" }
       })
     : [];
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      watchlistPublic: true,
+      watchlistShareId: true
+    }
+  });
   const progress = session?.user?.id
     ? await prisma.progress.findMany({ where: { userId: session.user.id } })
     : [];
@@ -115,7 +122,7 @@ export default async function DashboardPage() {
   return (
     <AppShell>
       <main className="px-4 py-6 md:px-8">
-        <h1 className="font-display text-4xl font-semibold">Dashboard</h1>
+        <h1 className="page-title font-display text-4xl font-semibold">Dashboard</h1>
         <p className="mt-2 text-sm text-zinc-400">Progress, statistics, weekly activity, and watch status.</p>
 
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -125,7 +132,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <section className="panel rounded-lg p-5">
             <h2 className="font-display text-2xl font-semibold">Continue watching</h2>
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               {continueItems.length ? (
@@ -141,11 +148,11 @@ export default async function DashboardPage() {
               )}
             </div>
           </section>
-          <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <section className="panel rounded-lg p-5">
             <h2 className="font-display text-2xl font-semibold">Library status</h2>
             <div className="mt-5 grid gap-3">
               {statusCounts.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm">
+                <div key={item.label} className="flex items-center justify-between rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <span className="text-zinc-300">{item.label}</span>
                   <span className="font-semibold text-white">{item.count}</span>
                 </div>
@@ -155,7 +162,7 @@ export default async function DashboardPage() {
             <div className="mt-3 grid gap-2">
               {recentProgress.length ? (
                 recentProgress.map((item) => item ? (
-                  <a key={item.id} href={`/media/${item.id}`} className="rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-zinc-300 hover:text-white">
+                  <a key={item.id} href={`/media/${item.id}`} className="interactive-card rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-zinc-300 hover:text-white">
                     <span className="block truncate font-medium">{item.title}</span>
                     <span className="text-xs text-zinc-500">{item.detail}</span>
                   </a>
@@ -168,11 +175,18 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-6">
-          <WatchlistManager initialItems={libraryItems} />
+          <WatchlistManager
+            initialItems={libraryItems}
+            initialSharing={{
+              enabled: currentUser?.watchlistPublic ?? false,
+              shareUrl: currentUser?.watchlistShareId ? `/watchlist/${currentUser.watchlistShareId}` : null
+            }}
+            showSharing={false}
+          />
         </div>
 
         {allProgressItems.length > continueItems.length ? (
-          <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <section className="panel mt-6 rounded-lg p-5">
             <h2 className="font-display text-2xl font-semibold">All tracked progress</h2>
             <div className="mt-4 grid gap-4 lg:grid-cols-3">
               {allProgressItems.map((item) => <ProgressCard key={item.id} {...item} />)}

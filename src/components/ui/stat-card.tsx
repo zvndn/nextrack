@@ -16,7 +16,7 @@ const emphasisStyles = {
 
 export function StatCard({ label, value, detail, icon: Icon, emphasis = "default" }: StatCardProps) {
   return (
-    <article className="min-h-32 rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.16)]">
+    <article className="panel interactive-card min-h-32 rounded-lg p-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-semibold uppercase text-zinc-500">{label}</p>
         {Icon ? (

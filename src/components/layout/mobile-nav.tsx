@@ -8,16 +8,16 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-white/10 bg-[#080b12]/80 backdrop-blur-lg lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[4.75rem] border-t border-white/10 bg-[#080b12]/88 px-1 pb-2 pt-1 shadow-[0_-18px_50px_rgba(0,0,0,0.24)] backdrop-blur-2xl lg:hidden">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-200 active:scale-95 ${
+            className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-md transition-all duration-200 active:scale-95 ${
               isActive
-                ? "text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                ? "bg-cyan-300/10 text-cyan-200"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >

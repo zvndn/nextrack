@@ -120,15 +120,15 @@ export default async function HomePage() {
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
             <div
-              className="overflow-hidden rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] bg-cover bg-center shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
+              className="overflow-hidden rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] bg-cover bg-center shadow-[0_28px_90px_rgba(0,0,0,0.32)]"
               style={heroStyle}
             >
-              <div className="bg-black/55 p-6 backdrop-blur-[1px] md:p-8">
+              <div className="bg-gradient-to-r from-black/76 via-black/58 to-black/25 p-6 backdrop-blur-[1px] md:p-8">
                 <div className="max-w-2xl">
-                  <p className="text-sm font-medium text-cyan-200">
+                  <p className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-sm font-semibold text-cyan-100">
                     {heroMedia ? `Latest saved: ${heroMedia.title}` : user ? `Welcome back${user.name ? `, ${user.name}` : ""}` : "Build your media library"}
                   </p>
-                  <h1 className="font-display mt-3 max-w-2xl text-4xl font-semibold leading-tight text-white md:text-6xl">
+                  <h1 className="page-title font-display mt-4 max-w-2xl text-4xl font-semibold text-white md:text-6xl">
                     Track what you watch and pick up exactly where you stopped.
                   </h1>
                   <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-200 md:text-base">
@@ -183,7 +183,7 @@ export default async function HomePage() {
           </div>
 
           <aside className="space-y-6">
-            <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+            <section className="panel rounded-lg p-5">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-xl font-semibold">Profile</h2>
                 <Heart className="h-5 w-5 text-rose-300" />
@@ -207,12 +207,12 @@ export default async function HomePage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+            <section className="panel rounded-lg p-5">
               <h2 className="font-display text-xl font-semibold">Favorites</h2>
               <div className="mt-4 grid gap-3">
                 {favoriteItems.length ? (
                   favoriteItems.map((item) => (
-                    <a key={item.id} href={`/media/${item.id}`} className="flex items-center gap-3 rounded-md border border-white/10 bg-black/20 p-2 text-sm text-zinc-300 hover:text-white">
+                    <a key={item.id} href={`/media/${item.id}`} className="interactive-card flex items-center gap-3 rounded-md border border-white/10 bg-black/20 p-2 text-sm text-zinc-300 hover:text-white">
                       {item.image ? (
                         <Image src={item.image} alt="" width={36} height={48} className="h-12 w-9 rounded object-cover" />
                       ) : (

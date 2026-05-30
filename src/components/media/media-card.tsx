@@ -15,7 +15,7 @@ export function MediaCard({ id, title, type, image, rating, genre }: MediaCardPr
   return (
     <Link
       href={`/media/${id}`}
-      className="group block overflow-hidden rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] transition hover:-translate-y-1 hover:border-cyan-300/40"
+      className="interactive-card group block overflow-hidden rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] shadow-[0_16px_48px_rgba(0,0,0,0.16)]"
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-zinc-900">
         {image ? (
@@ -29,11 +29,12 @@ export function MediaCard({ id, title, type, image, rating, genre }: MediaCardPr
         ) : (
           <div className="grid h-full place-items-center px-3 text-center text-xs text-zinc-600">No image</div>
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/6 to-transparent opacity-90 transition group-hover:opacity-100" />
+        <div className="absolute inset-x-0 bottom-0 p-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="rounded bg-white/10 px-2 py-1 text-white backdrop-blur">{type}</span>
+            <span className="rounded bg-white/12 px-2 py-1 font-semibold text-white backdrop-blur">{type}</span>
             {rating ? (
-              <span className="flex items-center gap-1 rounded bg-black/50 px-2 py-1 text-amber-200">
+              <span className="flex items-center gap-1 rounded bg-black/55 px-2 py-1 font-semibold text-amber-200 backdrop-blur">
                 <Star className="h-3 w-3 fill-amber-300" />
                 {rating}
               </span>
@@ -42,7 +43,7 @@ export function MediaCard({ id, title, type, image, rating, genre }: MediaCardPr
         </div>
       </div>
       <div className="p-3">
-        <h3 className="line-clamp-2 min-h-10 text-sm font-semibold text-white">{title}</h3>
+        <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-white">{title}</h3>
         <p className="mt-1 text-xs text-zinc-400">{genre ?? "Tracked media"}</p>
       </div>
     </Link>

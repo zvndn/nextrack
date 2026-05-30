@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState, useTransition } from "react";
-import { Check, Eye, MonitorCog, Paintbrush, RotateCcw, Shield, User } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useState, useTransition } from "react";
+import { Check, Download, Eye, MonitorCog, Paintbrush, RotateCcw, Shield, Upload, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   applyAppearance,
@@ -31,20 +31,38 @@ const tabs: { value: SettingsTab; label: string; icon: typeof User }[] = [
   { value: "preferences", label: "Preferences", icon: MonitorCog }
 ];
 
-const themeOptions: { value: AppearanceSettings["theme"]; label: string; description: string }[] = [
-  { value: "midnight", label: "Midnight", description: "Dark, cinematic, high contrast." },
-  { value: "graphite", label: "Graphite", description: "Neutral dark interface for long sessions." },
-  { value: "light", label: "Light", description: "Bright layout for daytime use." },
-  { value: "nordic", label: "Nordic Frost", description: "Deep slate backgrounds with cool arctic tones." },
-  { value: "sunset", label: "Sunset Ember", description: "Warm dark burgundy and deep amber glow." },
-  { value: "sakura", label: "Sakura Blossom", description: "Charming bright pink hues and soft rose gradients." }
+const themeOptions: {
+  value: AppearanceSettings["theme"];
+  label: string;
+  description: string;
+  swatches: string[];
+}[] = [
+  { value: "midnight", label: "Midnight", description: "Cinematic black with cyan focus and deep poster contrast.", swatches: ["#080b12", "#121827", "#67e8f9"] },
+  { value: "graphite", label: "Graphite", description: "Neutral charcoal surfaces for long tracking sessions.", swatches: ["#101114", "#20242a", "#a1a1aa"] },
+  { value: "light", label: "Studio Light", description: "Clean daylight interface with crisp cards and muted borders.", swatches: ["#f8fafc", "#ffffff", "#0284c7"] },
+  { value: "nordic", label: "Nordic Frost", description: "Cold slate, icy highlights, and soft blue atmospheric depth.", swatches: ["#0b111a", "#162235", "#7dd3fc"] },
+  { value: "sunset", label: "Sunset Ember", description: "Warm burgundy shadows with ember accents for evening use.", swatches: ["#12080b", "#2a1014", "#f59e0b"] },
+  { value: "sakura", label: "Sakura Bloom", description: "Soft rose daylight with warm paper surfaces and calm contrast.", swatches: ["#fff5f7", "#ffffff", "#fb7185"] },
+  { value: "ocean", label: "Deep Ocean", description: "Blue-black depth, teal glass, and high-legibility aqua accents.", swatches: ["#03131f", "#082f49", "#2dd4bf"] },
+  { value: "forest", label: "Forest Canopy", description: "Grounded evergreen tones with moss highlights and quiet surfaces.", swatches: ["#07130d", "#10281b", "#86efac"] },
+  { value: "royal", label: "Royal Violet", description: "Dark plum workspace with refined violet and blue highlights.", swatches: ["#12091f", "#24113b", "#c4b5fd"] },
+  { value: "noir", label: "Noir Mono", description: "Almost monochrome black, clean borders, and restrained contrast.", swatches: ["#050505", "#171717", "#f5f5f5"] },
+  { value: "copper", label: "Copper Sand", description: "Bright warm editorial surfaces with copper controls and ink text.", swatches: ["#fff8ed", "#f3e4d0", "#c2410c"] },
+  { value: "aurora", label: "Aurora", description: "Northern green and violet gradients over polished dark panels.", swatches: ["#061216", "#11201f", "#5eead4"] }
 ];
 
 const accentOptions: { value: AppearanceSettings["accent"]; label: string; swatch: string }[] = [
-  { value: "cyan", label: "Cyan", swatch: "bg-cyan-300" },
-  { value: "emerald", label: "Emerald", swatch: "bg-emerald-300" },
-  { value: "rose", label: "Rose", swatch: "bg-rose-300" },
-  { value: "amber", label: "Amber", swatch: "bg-amber-300" }
+  { value: "cyan", label: "Cyan", swatch: "#67e8f9" },
+  { value: "blue", label: "Blue", swatch: "#60a5fa" },
+  { value: "indigo", label: "Indigo", swatch: "#a5b4fc" },
+  { value: "violet", label: "Violet", swatch: "#c4b5fd" },
+  { value: "emerald", label: "Emerald", swatch: "#6ee7b7" },
+  { value: "lime", label: "Lime", swatch: "#bef264" },
+  { value: "rose", label: "Rose", swatch: "#fda4af" },
+  { value: "pink", label: "Pink", swatch: "#f9a8d4" },
+  { value: "amber", label: "Amber", swatch: "#fcd34d" },
+  { value: "orange", label: "Orange", swatch: "#fdba74" },
+  { value: "white", label: "White", swatch: "#f8fafc" }
 ];
 
 export function SettingsForm({ initial }: SettingsFormProps) {
@@ -68,6 +86,48 @@ export function SettingsForm({ initial }: SettingsFormProps) {
 
   function resetAppearance() {
     updateAppearance(defaultAppearance);
+  }
+
+  function exportAppearance() {
+    const payload = JSON.stringify(appearance, null, 2);
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "nextrack-appearance.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    setAppearanceMessage("Appearance settings exported.");
+  }
+
+  function importAppearance(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        const next: AppearanceSettings = {
+          ...defaultAppearance,
+          ...parsed
+        };
+
+        updateAppearance(next);
+        setAppearanceMessage("Appearance settings imported.");
+      } catch {
+        setAppearanceMessage("Import failed. Choose a valid NexTrack appearance file.");
+      } finally {
+        event.target.value = "";
+      }
+    };
+
+    reader.readAsText(file);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -176,7 +236,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               <p className="mt-1 text-sm text-zinc-500">Theme choices are saved locally and apply across the site.</p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {themeOptions.map((option) => (
                 <button
                   key={option.value}
@@ -187,7 +247,14 @@ export function SettingsForm({ initial }: SettingsFormProps) {
                   }`}
                 >
                   <span className="flex items-center justify-between gap-3">
-                    <span className="font-semibold text-white">{option.label}</span>
+                    <span className="flex items-center gap-2 font-semibold text-white">
+                      <span className="flex overflow-hidden rounded-full border border-white/10">
+                        {option.swatches.map((swatch) => (
+                          <span key={swatch} className="h-5 w-5" style={{ backgroundColor: swatch }} />
+                        ))}
+                      </span>
+                      {option.label}
+                    </span>
                     {appearance.theme === option.value ? <Check className="h-4 w-4 text-cyan-200" /> : null}
                   </span>
                   <span className="mt-2 block text-sm text-zinc-400">{option.description}</span>
@@ -197,7 +264,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
 
             <div>
               <h3 className="font-display text-xl font-semibold">Accent color</h3>
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 {accentOptions.map((option) => (
                   <button
                     key={option.value}
@@ -207,7 +274,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
                       appearance.accent === option.value ? "border-cyan-300 bg-white/10 text-white" : "border-white/10 bg-black/20 text-zinc-300 hover:bg-white/10"
                     }`}
                   >
-                    <span className={`h-5 w-5 rounded-full ${option.swatch}`} />
+                    <span className="h-5 w-5 rounded-full" style={{ backgroundColor: option.swatch }} />
                     {option.label}
                   </button>
                 ))}
@@ -238,6 +305,15 @@ export function SettingsForm({ initial }: SettingsFormProps) {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" variant="ghost" onClick={exportAppearance}>
+                <Download className="h-4 w-4" />
+                Export appearance
+              </Button>
+              <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/20 hover:bg-white/10">
+                <Upload className="h-4 w-4" />
+                Import appearance
+                <input type="file" accept="application/json,.json" onChange={importAppearance} className="sr-only" />
+              </label>
               <Button type="button" variant="ghost" onClick={resetAppearance}>
                 <RotateCcw className="h-4 w-4" />
                 Reset appearance

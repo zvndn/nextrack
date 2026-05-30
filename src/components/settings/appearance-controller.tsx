@@ -3,8 +3,31 @@
 import { useEffect } from "react";
 
 export type AppearanceSettings = {
-  theme: "midnight" | "graphite" | "light" | "nordic" | "sunset" | "sakura";
-  accent: "cyan" | "emerald" | "rose" | "amber";
+  theme:
+    | "midnight"
+    | "graphite"
+    | "light"
+    | "nordic"
+    | "sunset"
+    | "sakura"
+    | "ocean"
+    | "forest"
+    | "royal"
+    | "noir"
+    | "copper"
+    | "aurora";
+  accent:
+    | "cyan"
+    | "blue"
+    | "indigo"
+    | "violet"
+    | "emerald"
+    | "lime"
+    | "rose"
+    | "pink"
+    | "amber"
+    | "orange"
+    | "white";
   density: "comfortable" | "compact";
   motion: "full" | "reduced";
 };
