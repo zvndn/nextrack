@@ -15,7 +15,7 @@ export function MediaCard({ id, title, type, image, rating, genre }: MediaCardPr
   return (
     <Link
       href={`/media/${id}`}
-      className="group block overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] transition hover:-translate-y-1 hover:border-cyan-300/40"
+      className="group block overflow-hidden rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] transition hover:-translate-y-1 hover:border-cyan-300/40"
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-zinc-900">
         {image ? (

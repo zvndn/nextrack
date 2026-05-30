@@ -21,8 +21,8 @@ function walk(dir) {
         /\bconsole\.(log|warn|error|info|debug)\s*\([^;]*\);?/gm,
         "",
       );
-      // replace unknown with unknown (word boundary)
-      content = content.replace(/\bany\b/g, "unknown");
+      // Do not rewrite TypeScript types here. Replacing `any` with `unknown`
+      // blindly can change runtime assumptions and must be handled manually.
       // replace @ts-ignore with @ts-expect-error
       content = content.replace(/\/\/\s*@ts-ignore/g, "// @ts-expect-error");
       // collapse multiple blank lines

@@ -12,10 +12,12 @@ type ProgressCardProps = {
 };
 
 export function ProgressCard({ id, title, type, meta, image, progress }: ProgressCardProps) {
+  const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
+
   return (
     <Link
       href={`/media/${id}`}
-      className="grid grid-cols-[86px_1fr] gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-3 transition hover:border-cyan-300/40"
+      className="grid grid-cols-[86px_minmax(0,1fr)] gap-4 rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] p-3 transition hover:-translate-y-0.5 hover:border-cyan-300/40"
     >
       <div className="relative h-28 overflow-hidden rounded-md bg-zinc-900">
         {image ? (
@@ -32,9 +34,9 @@ export function ProgressCard({ id, title, type, meta, image, progress }: Progres
         <h3 className="mt-2 truncate font-semibold text-white">{title}</h3>
         <p className="mt-1 text-sm text-zinc-400">{meta}</p>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-cyan-300" style={{ width: `${progress}%` }} />
+          <div className="h-full rounded-full bg-cyan-300" style={{ width: `${safeProgress}%` }} />
         </div>
-        <p className="mt-2 text-xs text-zinc-500">{progress}% complete</p>
+        <p className="mt-2 text-xs text-zinc-500">{safeProgress}% complete</p>
       </div>
     </Link>
   );

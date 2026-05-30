@@ -3,12 +3,14 @@ import { AppShell } from "@/components/layout/app-shell";
 import { MediaCard } from "@/components/media/media-card";
 import { HomeLibraryTabs } from "@/components/home/home-library-tabs";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard } from "@/components/ui/stat-card";
 import { auth } from "@/lib/auth";
-import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
+import { formatRuntimeHours, mediaTypeLabel, posterUrl, progressText, runtimeCoverageText, trackedRuntimeHours, watchedDurationText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 import { getReleaseCalendarForUser } from "@/lib/release-calendar";
 import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
-import { Heart, Plus, TrendingUp } from "lucide-react";
+import { Activity, CheckCircle2, Clock3, Heart, Library, PlayCircle, Plus, TrendingUp } from "lucide-react";
 
 export default async function HomePage() {
   const session = await auth();
@@ -84,17 +86,24 @@ export default async function HomePage() {
   const savedCount = saved.length;
   const completedCount = saved.filter((item) => item.status === "COMPLETED").length;
   const watchingCount = saved.filter((item) => item.status === "WATCHING").length;
-  const watchedHours = saved.reduce((sum, item) => sum + estimatedHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const watchedHours = saved.reduce((sum, item) => sum + trackedRuntimeHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const runtimeTitleCount = saved.filter((item) => {
+    const itemProgress = progressByMediaId.get(item.media.id);
+    return Boolean(item.media.runtimeMinutes && itemProgress && itemProgress.watchedCount > 0);
+  }).length;
+  const completionRate = savedCount ? Math.round((completedCount / savedCount) * 100) : 0;
 
   const stats = [
-    { label: "Saved titles", value: String(savedCount), detail: "in your library" },
-    { label: "Watching", value: String(watchingCount), detail: "active titles" },
-    { label: "Watch streak", value: `${watchStreak} day${watchStreak === 1 ? "" : "s"}`, detail: "consecutive active days" },
+    { label: "Saved titles", value: String(savedCount), detail: "From your watchlist", icon: Library, emphasis: "accent" as const },
+    { label: "Watching", value: String(watchingCount), detail: "Marked as active", icon: PlayCircle },
+    { label: "Watch streak", value: `${watchStreak}d`, detail: "Consecutive active days", icon: TrendingUp },
+    { label: "Completed", value: `${completionRate}%`, detail: `${completedCount}/${savedCount || 0} saved titles`, icon: CheckCircle2 },
     {
-      label: "Watched hours",
-      value: `${Math.round(watchedHours)}h`,
-      detail: `Lifetime spent: ${watchedLifetimeText(watchedHours)}`,
-      extraDetail: `Fun comparison: ${watchedFunComparisonText(watchedHours)}`
+      label: "Tracked time",
+      value: formatRuntimeHours(watchedHours),
+      detail: `${watchedDurationText(watchedHours)}. ${runtimeCoverageText(savedCount, runtimeTitleCount)}`,
+      icon: Clock3,
+      emphasis: "warm" as const
     }
   ];
 
@@ -108,10 +117,10 @@ export default async function HomePage() {
   return (
     <AppShell>
       <main className="px-4 py-6 md:px-8">
-        <section className="grid gap-6 xl:grid-cols-[1fr_340px]">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
             <div
-              className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] bg-cover bg-center"
+              className="overflow-hidden rounded-lg border border-white/10 bg-white/[var(--surface-alpha)] bg-cover bg-center shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
               style={heroStyle}
             >
               <div className="bg-black/55 p-6 backdrop-blur-[1px] md:p-8">
@@ -139,14 +148,9 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
               {stats.map((stat) => (
-                <article key={stat.label} className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
-                  <div className="mt-2 font-display text-3xl font-semibold text-white">{stat.value}</div>
-                  <p className="mt-1 text-sm text-zinc-400">{stat.detail}</p>
-                  {"extraDetail" in stat ? <p className="mt-1 text-xs text-zinc-500">{stat.extraDetail}</p> : null}
-                </article>
+                <StatCard key={stat.label} {...stat} />
               ))}
             </div>
 
@@ -167,9 +171,13 @@ export default async function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-400">
-                  Your saved library will appear here after you add titles.
-                </div>
+                <EmptyState
+                  title="No saved titles yet"
+                  body="Your library will appear here after you add anime, movies, or TV series."
+                  actionHref="/discover"
+                  actionLabel="Discover"
+                  icon={Activity}
+                />
               )}
             </section>
           </div>

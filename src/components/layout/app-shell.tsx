@@ -14,21 +14,21 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-transparent text-zinc-100">
       <AppearanceController />
       <MobileNav />
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/10 bg-black/25 p-4 backdrop-blur-xl lg:block">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/10 bg-black/30 p-4 shadow-[20px_0_70px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:block">
         <Link href="/" className="mb-8 flex items-center gap-3 px-2">
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-300 text-sm font-black text-black">
             NX
           </span>
           <span>
             <span className="block font-display text-xl font-semibold">NexTrack</span>
-            <span className="block text-xs text-zinc-500">media command center</span>
+            <span className="block text-xs text-zinc-500">personal watch tracker</span>
           </span>
         </Link>
         <SidebarNav />
       </aside>
       <div className="lg:pl-64 pb-20 lg:pb-0">
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b12]/85 px-4 py-3 backdrop-blur-xl md:px-8">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b12]/88 px-4 py-3 backdrop-blur-xl md:px-8">
+          <div className="mx-auto flex max-w-[1600px] items-center gap-3">
             <Link href="/" className="font-display text-lg font-semibold lg:hidden">
               NexTrack
             </Link>
@@ -42,9 +42,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        {children}
+        <div className="mx-auto max-w-[1600px]">{children}</div>
         <footer className="border-t border-white/10 px-4 py-6 text-sm text-zinc-500 md:px-8">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p>NexTrack helps you track anime, movies, and TV series in one place.</p>
             <nav className="flex flex-wrap gap-4">
               <Link href="/about" className="hover:text-white">About</Link>

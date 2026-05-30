@@ -1,11 +1,14 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { ProgressCard } from "@/components/media/progress-card";
 import { WatchlistManager } from "@/components/dashboard/watchlist-manager";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard } from "@/components/ui/stat-card";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { estimatedHours, mediaTypeLabel, posterUrl, progressText, statusLabel, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
+import { formatRuntimeHours, mediaTypeLabel, posterUrl, progressText, runtimeCoverageText, statusLabel, trackedRuntimeHours, watchedDurationText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
+import { CheckCircle2, Clock3, Library, ListPlus, PlayCircle, TrendingUp } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -29,7 +32,11 @@ export default async function DashboardPage() {
       })
     : [];
   const progressByMediaId = new Map(progress.map((item) => [item.mediaId, item]));
-  const watchedHours = saved.reduce((sum, item) => sum + estimatedHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const watchedHours = saved.reduce((sum, item) => sum + trackedRuntimeHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const runtimeTitleCount = saved.filter((item) => {
+    const itemProgress = progressByMediaId.get(item.media.id);
+    return Boolean(item.media.runtimeMinutes && itemProgress && itemProgress.watchedCount > 0);
+  }).length;
   const watchStreak = calculateWatchStreak([
     ...watchActivities.map((item) => item.dayKey),
     ...dateValuesToDayKeys(progress.map((item) => item.lastWatchedAt))
@@ -37,17 +44,20 @@ export default async function DashboardPage() {
   const completed = saved.filter((item) => item.status === "COMPLETED").length;
   const watching = saved.filter((item) => item.status === "WATCHING");
   const planned = saved.filter((item) => item.status === "PLAN_TO_WATCH").length;
+  const completionRate = saved.length ? Math.round((completed / saved.length) * 100) : 0;
   const dashboardStats = [
-    { label: "Saved titles", value: String(saved.length), detail: "in your library" },
-    { label: "Watch streak", value: `${watchStreak} day${watchStreak === 1 ? "" : "s"}`, detail: "consecutive active days" },
+    { label: "Saved titles", value: String(saved.length), detail: "From your watchlist", icon: Library, emphasis: "accent" as const },
+    { label: "Watching", value: String(watching.length), detail: "Active titles", icon: PlayCircle },
+    { label: "Watch streak", value: `${watchStreak}d`, detail: "Consecutive active days", icon: TrendingUp },
     {
-      label: "Watched hours",
-      value: `${Math.round(watchedHours)}h`,
-      detail: `Lifetime spent: ${watchedLifetimeText(watchedHours)}`,
-      extraDetail: `Fun comparison: ${watchedFunComparisonText(watchedHours)}`
+      label: "Tracked time",
+      value: formatRuntimeHours(watchedHours),
+      detail: `${watchedDurationText(watchedHours)}. ${runtimeCoverageText(saved.length, runtimeTitleCount)}`,
+      icon: Clock3,
+      emphasis: "warm" as const
     },
-    { label: "Completed", value: String(completed), detail: "finished titles" },
-    { label: "Planned", value: String(planned), detail: "queued for later" }
+    { label: "Completed", value: `${completionRate}%`, detail: `${completed}/${saved.length || 0} finished titles`, icon: CheckCircle2 },
+    { label: "Planned", value: String(planned), detail: "Queued for later", icon: ListPlus }
   ];
   const continueItems = watching.map((item) => {
     const entry = progressByMediaId.get(item.media.id);
@@ -108,27 +118,26 @@ export default async function DashboardPage() {
         <h1 className="font-display text-4xl font-semibold">Dashboard</h1>
         <p className="mt-2 text-sm text-zinc-400">Progress, statistics, weekly activity, and watch status.</p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           {dashboardStats.map((stat) => (
-            <article key={stat.label} className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-              <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
-              <div className="mt-2 font-display text-3xl font-semibold">{stat.value}</div>
-              <p className="mt-1 text-sm text-zinc-400">{stat.detail}</p>
-              {"extraDetail" in stat ? <p className="mt-1 text-xs text-zinc-500">{stat.extraDetail}</p> : null}
-            </article>
+            <StatCard key={stat.label} {...stat} />
           ))}
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_360px]">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
             <h2 className="font-display text-2xl font-semibold">Continue watching</h2>
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               {continueItems.length ? (
                 continueItems.map((item) => <ProgressCard key={item.id} {...item} />)
               ) : (
-                <div className="rounded-lg border border-white/10 bg-black/20 p-5 text-sm text-zinc-400">
-                  Nothing is marked as watching yet. Open a title and save episode progress to start this list.
-                </div>
+                <EmptyState
+                  title="Nothing active yet"
+                  body="Open a title and save episode progress to start this list."
+                  actionHref="/discover"
+                  actionLabel="Find titles"
+                  icon={PlayCircle}
+                />
               )}
             </div>
           </section>

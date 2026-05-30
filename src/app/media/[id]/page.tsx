@@ -14,8 +14,10 @@ type Props = {
 
 export default async function MediaDetailPage({ params }: Props) {
   const { id } = await params;
-  const session = await auth();
-  const stored = await prisma.media.findUnique({ where: { id } }).catch(() => null);
+  const [session, stored] = await Promise.all([
+    auth(),
+    prisma.media.findUnique({ where: { id } }).catch(() => null)
+  ]);
 
   if (!stored) {
     return (
@@ -37,8 +39,8 @@ export default async function MediaDetailPage({ params }: Props) {
     );
   }
 
-  const [progress, watchlist, favorite] = stored && session?.user?.id
-    ? await Promise.all([
+  const userMediaStatePromise = session?.user?.id
+    ? Promise.all([
         prisma.progress.findUnique({
           where: { userId_mediaId: { userId: session.user.id, mediaId: stored.id } }
         }),
@@ -49,42 +51,46 @@ export default async function MediaDetailPage({ params }: Props) {
           where: { userId_mediaId: { userId: session.user.id, mediaId: stored.id } }
         })
       ])
-    : [null, null, null];
+    : Promise.resolve([null, null, null] as const);
+
+  const hasOutdatedEpisodeCount =
+    stored.type !== "MOVIE" &&
+    (!stored.episodesCount || stored.updatedAt.getTime() < Date.now() - 24 * 60 * 60 * 1000);
+  const freshEpisodeCountPromise = hasOutdatedEpisodeCount
+    ? stored.source === "jikan"
+      ? fetchJikanEpisodesCount(stored.sourceId)
+      : stored.source === "tvmaze"
+        ? fetchTvMazeEpisodesCount(stored.sourceId)
+        : Promise.resolve(undefined)
+    : Promise.resolve(undefined);
+
+  const [[progress, watchlist, favorite], fetchedEpisodesCount] = await Promise.all([
+    userMediaStatePromise,
+    freshEpisodeCountPromise
+  ]);
 
   let episodesCount = stored.episodesCount ?? undefined;
   let updatedProgress = progress;
 
-  if (stored.type !== "MOVIE") {
-    const isOutdated = stored.updatedAt.getTime() < Date.now() - 24 * 60 * 60 * 1000;
-    if (!episodesCount || isOutdated) {
-      let fetchedCount: number | undefined;
-      if (stored.source === "jikan") {
-        fetchedCount = await fetchJikanEpisodesCount(stored.sourceId);
-      } else if (stored.source === "tvmaze") {
-        fetchedCount = await fetchTvMazeEpisodesCount(stored.sourceId);
-      }
-
-      if (fetchedCount !== undefined && fetchedCount !== stored.episodesCount) {
-        episodesCount = fetchedCount;
-        try {
-          await prisma.media.update({
-            where: { id: stored.id },
-            data: { episodesCount: fetchedCount }
-          });
-          if (progress) {
-            const nextProgress = await prisma.progress.update({
-              where: { id: progress.id },
-              data: {
-                totalCount: fetchedCount,
-                percentage: fetchedCount > 0 ? Math.min(100, Math.round((progress.watchedCount / fetchedCount) * 100)) : 0
-              }
-            });
-            updatedProgress = nextProgress;
+  if (fetchedEpisodesCount !== undefined && fetchedEpisodesCount !== stored.episodesCount) {
+    episodesCount = fetchedEpisodesCount;
+    try {
+      await prisma.media.update({
+        where: { id: stored.id },
+        data: { episodesCount: fetchedEpisodesCount }
+      });
+      if (progress) {
+        const nextProgress = await prisma.progress.update({
+          where: { id: progress.id },
+          data: {
+            totalCount: fetchedEpisodesCount,
+            percentage: fetchedEpisodesCount > 0 ? Math.min(100, Math.round((progress.watchedCount / fetchedEpisodesCount) * 100)) : 0
           }
-        } catch {
-          // ignore update errors
-        }
+        });
+        updatedProgress = nextProgress;
       }
+    } catch {
+      // Ignore metadata refresh failures; the page can still render with cached data.
     }
   }
 
@@ -129,8 +135,8 @@ export default async function MediaDetailPage({ params }: Props) {
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          {/* Left Column: Detailed Metadata/Info panel */}
+        <div className="space-y-6">
+          {/* Detailed Metadata/Info panel */}
           <div className="space-y-6">
             <div className="rounded-xl border border-white/10 bg-white/[var(--surface-alpha)] p-6 shadow-2xl backdrop-blur-xl">
               <h2 className="font-display text-xl font-bold text-white mb-5 flex items-center gap-2">
@@ -138,7 +144,7 @@ export default async function MediaDetailPage({ params }: Props) {
                 Media Details
               </h2>
               
-              <div className="grid gap-6 sm:grid-cols-2">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded bg-white/5 p-1.5 text-zinc-400">
                     <Film className="h-4 w-4" />
@@ -235,7 +241,7 @@ export default async function MediaDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Right Column: Streaming Sync Sidebar */}
+          {/* Watch Zone and streaming sync controls */}
           <div className="space-y-6">
             <StreamingSync
               mediaId={stored.id}
@@ -243,6 +249,7 @@ export default async function MediaDetailPage({ params }: Props) {
               mediaType={stored.type}
               currentWatchedCount={progress?.watchedCount ?? 0}
               totalCount={totalCount}
+              runtimeMinutes={stored.runtimeMinutes}
             />
           </div>
         </div>

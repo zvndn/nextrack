@@ -6,8 +6,9 @@ import { AppShell } from "@/components/layout/app-shell";
 import { MediaCard } from "@/components/media/media-card";
 import { ProgressCard } from "@/components/media/progress-card";
 import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
 import { auth, signOut } from "@/lib/auth";
-import { estimatedHours, mediaTypeLabel, posterUrl, progressText, watchedFunComparisonText, watchedLifetimeText } from "@/lib/media-presenters";
+import { formatRuntimeHours, mediaTypeLabel, posterUrl, progressText, runtimeCoverageText, trackedRuntimeHours, watchedDurationText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
 
@@ -44,7 +45,11 @@ export default async function ProfilePage() {
   const progressByMediaId = new Map(progress.map((item) => [item.mediaId, item]));
   const completedCount = saved.filter((item) => item.status === "COMPLETED").length;
   const watching = saved.filter((item) => item.status === "WATCHING");
-  const watchedHours = saved.reduce((sum, item) => sum + estimatedHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const watchedHours = saved.reduce((sum, item) => sum + trackedRuntimeHours(item.media, progressByMediaId.get(item.media.id)), 0);
+  const runtimeTitleCount = saved.filter((item) => {
+    const itemProgress = progressByMediaId.get(item.media.id);
+    return Boolean(item.media.runtimeMinutes && itemProgress && itemProgress.watchedCount > 0);
+  }).length;
   const watchStreak = calculateWatchStreak([
     ...watchActivities.map((item) => item.dayKey),
     ...dateValuesToDayKeys(progress.map((item) => item.lastWatchedAt))
@@ -256,22 +261,18 @@ export default async function ProfilePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Saved", value: saved.length },
-                  { label: "Completed", value: completedCount },
-                  { label: "Watch streak", value: `${watchStreak} day${watchStreak === 1 ? "" : "s"}`, detail: "consecutive active days" },
+                  { label: "Saved", value: String(saved.length), icon: Award },
+                  { label: "Completed", value: String(completedCount), icon: CheckCircle2 },
+                  { label: "Watch streak", value: `${watchStreak}d`, detail: "Consecutive active days", icon: Flame, emphasis: "accent" as const },
                   {
-                    label: "Watched hours",
-                    value: `${Math.round(watchedHours)}h`,
-                    detail: `Lifetime spent: ${watchedLifetimeText(watchedHours)}`,
-                    extraDetail: `Fun comparison: ${watchedFunComparisonText(watchedHours)}`
+                    label: "Tracked time",
+                    value: formatRuntimeHours(watchedHours),
+                    detail: `${watchedDurationText(watchedHours)}. ${runtimeCoverageText(saved.length, runtimeTitleCount)}`,
+                    icon: Clock3,
+                    emphasis: "warm" as const
                   }
                 ].map((stat) => (
-                  <div key={stat.label} className="rounded-lg border border-white/10 bg-black/20 p-4">
-                    <p className="text-xs uppercase text-zinc-500">{stat.label}</p>
-                    <p className="font-display mt-2 text-3xl font-semibold text-white">{stat.value}</p>
-                    {"detail" in stat ? <p className="mt-1 text-sm text-zinc-400">{stat.detail}</p> : null}
-                    {"extraDetail" in stat ? <p className="mt-1 text-xs text-zinc-500">{stat.extraDetail}</p> : null}
-                  </div>
+                  <StatCard key={stat.label} {...stat} />
                 ))}
             </div>
           </div>

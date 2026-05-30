@@ -51,6 +51,11 @@ type WikipediaPage = {
   thumbnail?: { source?: string };
 };
 
+type WikipediaTopArticle = {
+  article?: string;
+  views?: number;
+};
+
 export function mediaResultKey(item: Pick<ExternalMediaItem, "source" | "type" | "id">) {
   return `${item.source}-${item.type}-${item.id}`;
 }
@@ -85,6 +90,7 @@ async function safeSearch(search: () => Promise<ExternalMediaItem[]>) {
 const JIKAN_BASE = process.env.JIKAN_API_BASE ?? "https://api.jikan.moe/v4";
 const TVMAZE_BASE = "https://api.tvmaze.com";
 const WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php";
+const WIKIPEDIA_PAGEVIEWS_API = "https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access";
 
 export async function fetchJikanEpisodesCount(malId: string): Promise<number | undefined> {
   try {
@@ -289,6 +295,94 @@ export async function searchMovies(query: string): Promise<ExternalMediaItem[]> 
     .slice(0, 12);
 }
 
+function wikipediaPageviewDate(daysAgo: number) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - daysAgo);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return { year, month, day };
+}
+
+function wikipediaArticleTitle(article: string) {
+  try {
+    return decodeURIComponent(article).replaceAll("_", " ");
+  } catch {
+    return article.replaceAll("_", " ");
+  }
+}
+
+async function fetchWikipediaPagesByTitles(titles: string[]) {
+  if (titles.length === 0) return [];
+
+  const pages: WikipediaPage[] = [];
+  const chunkSize = 40;
+
+  for (let index = 0; index < titles.length; index += chunkSize) {
+    const params = new URLSearchParams({
+      action: "query",
+      titles: titles.slice(index, index + chunkSize).join("|"),
+      prop: "pageimages|extracts",
+      exintro: "1",
+      explaintext: "1",
+      pithumbsize: "600",
+      pilicense: "any",
+      redirects: "1",
+      format: "json",
+      origin: "*"
+    });
+
+    const response = await fetch(`${WIKIPEDIA_API}?${params.toString()}`, {
+      headers: { "Api-User-Agent": "NexTrack/0.1 media discovery" },
+      next: { revalidate: 60 * 60 * 12 }
+    });
+
+    if (!response.ok) continue;
+    const payload = (await response.json()) as { query?: { pages?: Record<string, WikipediaPage> } };
+    pages.push(...Object.values(payload.query?.pages ?? {}));
+  }
+
+  return pages;
+}
+
+async function fetchPopularMoviesFromWikipedia(): Promise<ExternalMediaItem[]> {
+  for (let daysAgo = 1; daysAgo <= 7; daysAgo += 1) {
+    const { year, month, day } = wikipediaPageviewDate(daysAgo);
+    const response = await fetch(`${WIKIPEDIA_PAGEVIEWS_API}/${year}/${month}/${day}`, {
+      headers: { "Api-User-Agent": "NexTrack/0.1 media discovery" },
+      next: { revalidate: 60 * 60 * 12 }
+    });
+
+    if (!response.ok) continue;
+    const payload = (await response.json()) as { items?: { articles?: WikipediaTopArticle[] }[] };
+    const titles = (payload.items?.[0]?.articles ?? [])
+      .map((item) => item.article)
+      .filter((title): title is string => Boolean(title && !title.includes(":") && title !== "Main_Page"))
+      .slice(0, 320)
+      .map(wikipediaArticleTitle);
+
+    const pages = await fetchWikipediaPagesByTitles(titles);
+    const movies = pages
+      .filter((page) => isMoviePage(page, ""))
+      .map((page): ExternalMediaItem => ({
+        id: String(page.pageid),
+        source: "wikipedia" as const,
+        type: "movie" as const,
+        title: page.title ?? "Untitled movie",
+        overview: page.extract,
+        image: page.thumbnail?.source,
+        year: Number(page.extract?.match(/\b(19|20)\d{2}\b/)?.[0]) || undefined,
+        genres: []
+      }))
+      .filter(hasImage)
+      .slice(0, 5);
+
+    if (movies.length > 0) return movies;
+  }
+
+  return [];
+}
+
 export async function searchMedia(query: string, type: MediaSearchType = "all") {
   const tasks: Promise<ExternalMediaItem[]>[] = [];
   if (type === "all" || type === "anime") tasks.push(safeSearch(() => searchAnime(query)));
@@ -374,14 +468,10 @@ export async function getTrendingMedia(): Promise<{
     }
   };
 
-  // 3. Search Wikipedia for movies from the current and previous year
+  // 3. Use recent Wikipedia pageviews to show genuinely popular film pages without an API key.
   const fetchTopMovies = async () => {
     try {
-      const currentYear = new Date().getFullYear();
-      const resultsCurrent = await searchMovies(String(currentYear));
-      const resultsPrev = await searchMovies(String(currentYear - 1));
-      const combined = uniqueMediaResults([...resultsCurrent, ...resultsPrev]);
-      return combined.slice(0, 5);
+      return await fetchPopularMoviesFromWikipedia();
     } catch {
       return [];
     }
