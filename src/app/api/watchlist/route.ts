@@ -5,8 +5,9 @@ import { upsertExternalMedia } from "@/lib/media-store";
 import type { ExternalMediaItem } from "@/lib/media-sources";
 import { recordWatchActivity } from "@/lib/watch-streak";
 import { WATCH_STATUSES, WatchStatusValues } from "@/lib/watch-status";
+import { readJsonObject } from "@/lib/request";
 
-const validStatuses = new Set(WATCH_STATUSES);
+const validStatuses = new Set<string>(WATCH_STATUSES);
 
 export async function GET() {
   const session = await auth();
@@ -27,19 +28,15 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Authentication required." }, { status: 401 });
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON input." }, { status: 400 });
-  }
-
+  const body = await readJsonObject(request);
   if (!body) {
-    return Response.json({ error: "Request body is required." }, { status: 400 });
+    return Response.json({ error: "A JSON object up to 16 KB is required." }, { status: 400 });
   }
 
   const mediaInput = body.media as ExternalMediaItem | undefined;
-  const status: WatchStatus = validStatuses.has(body.status) ? body.status as WatchStatus : WatchStatusValues.PLAN_TO_WATCH;
+  const status: WatchStatus = typeof body.status === "string" && validStatuses.has(body.status)
+    ? body.status as WatchStatus
+    : WatchStatusValues.PLAN_TO_WATCH;
 
   if (!mediaInput?.id || !mediaInput.title || !mediaInput.source || !mediaInput.type) {
     return Response.json({ error: "Valid media payload is required." }, { status: 400 });
@@ -70,19 +67,15 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Authentication required." }, { status: 401 });
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON input." }, { status: 400 });
-  }
-
+  const body = await readJsonObject(request);
   if (!body) {
-    return Response.json({ error: "Request body is required." }, { status: 400 });
+    return Response.json({ error: "A JSON object up to 16 KB is required." }, { status: 400 });
   }
 
   const mediaId = String(body.mediaId ?? "");
-  const status: WatchStatus | null = validStatuses.has(body.status) ? body.status as WatchStatus : null;
+  const status: WatchStatus | null = typeof body.status === "string" && validStatuses.has(body.status)
+    ? body.status as WatchStatus
+    : null;
 
   if (!mediaId || !status) {
     return Response.json({ error: "Valid mediaId and status are required." }, { status: 400 });

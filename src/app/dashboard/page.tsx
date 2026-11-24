@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { ProgressCard } from "@/components/media/progress-card";
 import { WatchlistManager } from "@/components/dashboard/watchlist-manager";
+import { SmartQueue } from "@/components/dashboard/smart-queue";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import { redirect } from "next/navigation";
@@ -8,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { formatRuntimeHours, mediaTypeLabel, posterUrl, progressText, runtimeCoverageText, statusLabel, trackedRuntimeHours, watchedDurationText } from "@/lib/media-presenters";
 import { prisma } from "@/lib/prisma";
 import { calculateWatchStreak, dateValuesToDayKeys } from "@/lib/watch-streak";
+import { buildSmartQueue } from "@/lib/smart-queue";
 import { CheckCircle2, Clock3, Library, ListPlus, PlayCircle, TrendingUp } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -118,6 +120,19 @@ export default async function DashboardPage() {
     meta: progressText(item.media, progressByMediaId.get(item.media.id), item.status),
     image: posterUrl(item.media)
   }));
+  const smartQueue = buildSmartQueue(saved.map((item) => {
+    const entry = progressByMediaId.get(item.media.id);
+    return {
+      id: item.media.id,
+      title: item.media.title,
+      status: item.status,
+      progress: entry?.percentage ?? 0,
+      watchedCount: entry?.watchedCount ?? 0,
+      totalCount: entry?.totalCount ?? item.media.episodesCount ?? (item.media.type === "MOVIE" ? 1 : 0),
+      rating: item.media.rating,
+      updatedAt: entry?.lastWatchedAt ?? item.updatedAt
+    };
+  }));
 
   return (
     <AppShell>
@@ -129,6 +144,10 @@ export default async function DashboardPage() {
           {dashboardStats.map((stat) => (
             <StatCard key={stat.label} {...stat} />
           ))}
+        </div>
+
+        <div className="mt-6">
+          <SmartQueue items={smartQueue} />
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
