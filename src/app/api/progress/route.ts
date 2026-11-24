@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { progressPercentage } from "@/lib/media-store";
 import { recordWatchActivity } from "@/lib/watch-streak";
 import { WATCH_STATUSES, WatchStatusValues } from "@/lib/watch-status";
+import { readJsonObject } from "@/lib/request";
 
 const validStatuses = new Set<string>(WATCH_STATUSES);
 
@@ -11,19 +12,9 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Authentication required." }, { status: 401 });
 
-  let body: unknown = null;
-  const rawText = await request.text();
-  if (!rawText) {
-    return Response.json({ error: "Request body is required." }, { status: 400 });
-  }
-  try {
-    body = JSON.parse(rawText);
-  } catch {
-    return Response.json({ error: "Invalid JSON input." }, { status: 400 });
-  }
-
+  const body = await readJsonObject(request);
   if (!body) {
-    return Response.json({ error: "Request body is required." }, { status: 400 });
+    return Response.json({ error: "A JSON object up to 16 KB is required." }, { status: 400 });
   }
 
   interface ProgressRequest {
@@ -62,7 +53,9 @@ export async function PATCH(request: Request) {
   const totalCount = Math.floor(totalInput);
   const watchedCount = totalCount > 0 ? Math.min(Math.floor(watchedInput), totalCount) : Math.floor(watchedInput);
   const percentage = progressPercentage(watchedCount, totalCount);
-  const requestedStatus: WatchStatus | null = body.status && validStatuses.has(body.status) ? body.status as WatchStatus : null;
+  const requestedStatus: WatchStatus | null = typeof body.status === "string" && validStatuses.has(body.status)
+    ? body.status as WatchStatus
+    : null;
   const status: WatchStatus =
     requestedStatus ??
     (totalCount > 0 && watchedCount >= totalCount

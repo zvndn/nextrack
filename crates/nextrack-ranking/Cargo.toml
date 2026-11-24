@@ -1,0 +1,9 @@
+[package]
+name = "nextrack-ranking"
+version = "0.1.0"
+edition = "2021"
+description = "Allocation-light smart-queue scorer for NexTrack batch imports"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
